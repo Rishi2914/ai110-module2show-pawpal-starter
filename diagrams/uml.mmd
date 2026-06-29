@@ -1,15 +1,68 @@
 classDiagram
-    %% Replace the placeholders below with your actual classes, attributes, methods, and relationships.
-    %% Keep this file updated so it matches your final implementation.
-
-    class ClassName {
-        +type attribute
-        +method() returnType
+    class Owner {
+        +str name
+        +int time_available_minutes
+        +list~str~ preferences
+        +add_pet(pet: Pet) None
+        +set_time_available(minutes: int) None
+        +get_pets() list~Pet~
     }
 
-    class AnotherClass {
-        +type attribute
-        +method() returnType
+    class Pet {
+        +str name
+        +str species
+        +int age
+        +add_task(task: PetCareTask) None
+        +remove_task(title: str) None
+        +get_tasks() list~PetCareTask~
+        +clear_tasks() None
     }
 
-    ClassName --> AnotherClass : relationship
+    class PetCareTask {
+        +str title
+        +int duration_minutes
+        +str priority
+        +str category
+        +bool is_recurring
+        +str frequency
+        +is_high_priority() bool
+        +to_dict() dict
+    }
+
+    class Scheduler {
+        +str start_time
+        +int time_limit_minutes
+        +build_plan(pet: Pet, owner: Owner) DailyPlan
+        +sort_tasks(tasks: list) list~PetCareTask~
+        +filter_tasks(tasks: list, time_remaining: int) list~PetCareTask~
+        +check_conflicts(items: list) bool
+    }
+
+    class DailyPlan {
+        +str date
+        +list~ScheduledItem~ scheduled_items
+        +int total_duration_minutes
+        +list~str~ skipped_tasks
+        +add_item(item: ScheduledItem) None
+        +skip_task(task: PetCareTask, reason: str) None
+        +display() str
+        +explain() str
+        +get_summary() dict
+    }
+
+    class ScheduledItem {
+        +PetCareTask task
+        +str start_time
+        +str end_time
+        +str reason
+        +duration() int
+        +to_dict() dict
+    }
+
+    Owner "1" --> "1..*" Pet : owns
+    Pet "1" --> "0..*" PetCareTask : has tasks
+    Scheduler "1" ..> "1" Owner : reads constraints
+    Scheduler "1" ..> "1" Pet : reads tasks
+    Scheduler "1" --> "1" DailyPlan : creates
+    DailyPlan "1" --> "0..*" ScheduledItem : contains
+    ScheduledItem "1" --> "1" PetCareTask : wraps
