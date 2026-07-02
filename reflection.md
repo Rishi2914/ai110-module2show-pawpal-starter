@@ -5,12 +5,24 @@
 **a. Initial design**
 
 - Briefly describe your initial UML design.
+  Let a user enter basic owner + pet info
+  Let a user add tasks with duration and other stuff
+  Let a user edit those tasks 
 - What classes did you include, and what responsibilities did you assign to each?
+  Class OwnerInfo will get the information of the owner 
+  Class PetInfo will get the information of the pet
+  Class add will let the user add tasks
+  Class edit will let the user edit tasks
 
 **b. Design changes**
 
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+Yes, a few things changed after reviewing the initial design.
+
+Owner and Pet were missing list attributes to actually store their pets and tasks. The methods like add_pet and get_tasks had nowhere to read or write data, so those lists were added.
+
+The build_plan method originally took one pet, but an owner can have multiple pets, so it was changed to accept a list of pets instead.
+
+The skipped_tasks attribute was storing just strings, but it needs to store more info like task duration and priority so the plan summary is useful. It was changed to store dicts instead.
 
 ---
 
