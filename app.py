@@ -28,6 +28,7 @@ if st.session_state.owner is None:
     st.stop()
 
 owner = st.session_state.owner
+scheduler = Scheduler(start_time="08:00", time_limit_minutes=owner.time_available_minutes)
 
 # ── Step 2: Add a Pet ────────────────────────────────────────────────────────
 st.divider()
@@ -88,9 +89,10 @@ if st.button("Add Task"):
         st.success(f"Added '{task_title}' to {selected_pet.name}.")
 
 for pet in pets:
-    tasks = pet.get_tasks()
+    tasks = scheduler.sort_by_time(pet.get_tasks())
     if tasks:
-        st.write(f"**{pet.name}'s tasks:**")
+        total_min = sum(t.duration_minutes for t in tasks)
+        st.write(f"**{pet.name}'s tasks** — {len(tasks)} task(s), {total_min} min total (shortest → longest):")
         header = st.columns([3, 1, 1, 1, 1, 1])
         header[0].caption("Title")
         header[1].caption("Duration")
@@ -118,26 +120,41 @@ if st.button("Generate schedule"):
     if not all_tasks:
         st.warning("Add at least one task before generating a schedule.")
     else:
-        scheduler = Scheduler(start_time="08:00", time_limit_minutes=owner.time_available_minutes)
         plan = scheduler.build_plan(owner.get_pets(), owner)
         summary = plan.get_summary()
 
         st.success(f"Scheduled {summary['scheduled_count']} task(s) — {summary['total_duration_minutes']} min total")
+
         if summary["breaks_inserted"]:
             st.info(f"{summary['breaks_inserted']} × 5-min break(s) automatically included.")
-        if summary["conflicts"]:
-            st.error(f"{len(summary['conflicts'])} scheduling conflict(s) detected:")
-            for c in summary["conflicts"]:
-                st.caption(
-                    f"• [{c['pet_a']}] {c['task_a']} ({c['start_a']}–{c['end_a']})"
-                    f" overlaps [{c['pet_b']}] {c['task_b']} ({c['start_b']}–{c['end_b']})"
-                )
-        st.text(plan.display())
 
-        st.subheader("Why this schedule?")
-        st.text(plan.explain())
+        # conflict cards — structured and actionable for the owner
+        if plan.conflicts:
+            st.error(f"⚠️ {len(plan.conflicts)} scheduling conflict(s) detected — two tasks overlap in time.")
+            for c in plan.conflicts:
+                st.warning(
+                    f"**[{c['pet_a']}] {c['task_a']}** ({c['start_a']}–{c['end_a']}) overlaps "
+                    f"**[{c['pet_b']}] {c['task_b']}** ({c['start_b']}–{c['end_b']}). "
+                    f"Tip: shift one of these tasks to a different start time."
+                )
+
+        # schedule as a readable table
+        if plan.scheduled_items:
+            st.dataframe(
+                [{"Time": f"{i.start_time} – {i.end_time}", "Pet": i.pet_name,
+                  "Task": i.task.title, "Duration": f"{i.duration()} min",
+                  "Priority": i.task.priority.capitalize()}
+                 for i in plan.scheduled_items],
+                use_container_width=True,
+                hide_index=True,
+            )
+
+        with st.expander("Why this schedule?"):
+            st.text(plan.explain())
 
         if summary["skipped_count"] > 0:
-            st.warning(f"{summary['skipped_count']} task(s) skipped due to time constraints.")
+            priority_icon = {"high": "🔴", "medium": "🟡", "low": "⚪"}
+            st.warning(f"{summary['skipped_count']} task(s) couldn't fit in today's schedule:")
             for t in summary["skipped_tasks"]:
-                st.caption(f"• [{t['pet']}] {t['title']} ({t['duration_minutes']} min) — {t['reason']}")
+                icon = priority_icon.get(t["priority"], "•")
+                st.caption(f"{icon} **[{t['pet']}] {t['title']}** ({t['duration_minutes']} min) — {t['reason']}")
