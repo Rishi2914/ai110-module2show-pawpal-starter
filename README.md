@@ -76,16 +76,51 @@ Tasks skipped:   1
 
 ```bash
 # Run the full test suite:
-pytest
+python -m pytest tests/ -v
 
 # Run with coverage:
-pytest --cov
+python -m pytest tests/ --cov
 ```
 
-Sample test output:
+The test suite covers 28 cases across 8 areas: scheduling happy paths (priority order, preferred categories, all tasks fit), recurring task due dates (daily +1 day, weekly +7 days), empty and zero-input edge cases, boundary conditions (exact time fit, high-priority task skipped when only a lower-priority one fits), conflict detection (overlapping vs touching endpoints, cross-pet), duplicate guards, and filtering by completion status or pet name.
 
 ```
-# Paste your pytest output here
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.4.2, pluggy-1.6.0 -- /Library/Developer/CommandLineTools/usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/thiru/Documents/pawpal+
+collecting ... collected 28 items
+
+tests/test_pawpal.py::TestBuildPlanHappyPath::test_all_tasks_scheduled_when_time_is_sufficient PASSED [  3%]
+tests/test_pawpal.py::TestBuildPlanHappyPath::test_high_priority_scheduled_before_low PASSED [  7%]
+tests/test_pawpal.py::TestBuildPlanHappyPath::test_preferred_category_scheduled_before_non_preferred PASSED [ 10%]
+tests/test_pawpal.py::TestRecurringTasksHappyPath::test_daily_task_due_date_is_tomorrow PASSED [ 14%]
+tests/test_pawpal.py::TestRecurringTasksHappyPath::test_weekly_task_due_date_is_seven_days_out PASSED [ 17%]
+tests/test_pawpal.py::TestRecurringTasksHappyPath::test_next_occurrence_starts_incomplete PASSED [ 21%]
+tests/test_pawpal.py::TestRecurringTasksHappyPath::test_pet_complete_task_replaces_instance_in_list PASSED [ 25%]
+tests/test_pawpal.py::TestEmptyAndZeroInputs::test_pet_with_no_tasks_produces_empty_schedule PASSED [ 28%]
+tests/test_pawpal.py::TestEmptyAndZeroInputs::test_owner_with_zero_minutes_skips_all_tasks PASSED [ 32%]
+tests/test_pawpal.py::TestEmptyAndZeroInputs::test_sort_by_time_on_empty_list_returns_empty PASSED [ 35%]
+tests/test_pawpal.py::TestEmptyAndZeroInputs::test_filter_tasks_by_on_empty_list_returns_empty PASSED [ 39%]
+tests/test_pawpal.py::TestBoundaryConditions::test_task_duration_exactly_equal_to_time_remaining_is_scheduled PASSED [ 42%]
+tests/test_pawpal.py::TestBoundaryConditions::test_high_priority_task_skipped_when_only_low_priority_fits PASSED [ 46%]
+tests/test_pawpal.py::TestConflictDetection::test_touching_endpoints_are_not_flagged_as_conflict PASSED [ 50%]
+tests/test_pawpal.py::TestConflictDetection::test_same_start_time_is_a_conflict PASSED [ 53%]
+tests/test_pawpal.py::TestConflictDetection::test_partial_overlap_is_a_conflict PASSED [ 57%]
+tests/test_pawpal.py::TestConflictDetection::test_cross_pet_overlap_is_detected PASSED [ 60%]
+tests/test_pawpal.py::TestConflictDetection::test_warn_conflicts_returns_string_when_conflict_exists PASSED [ 64%]
+tests/test_pawpal.py::TestRecurringEdgeCases::test_non_recurring_mark_complete_returns_none PASSED [ 67%]
+tests/test_pawpal.py::TestRecurringEdgeCases::test_completing_already_completed_task_is_noop PASSED [ 71%]
+tests/test_pawpal.py::TestRecurringEdgeCases::test_completing_nonexistent_title_returns_none PASSED [ 75%]
+tests/test_pawpal.py::TestRecurringEdgeCases::test_completed_task_excluded_from_build_plan PASSED [ 78%]
+tests/test_pawpal.py::TestDuplicateGuards::test_duplicate_task_title_is_ignored PASSED [ 82%]
+tests/test_pawpal.py::TestDuplicateGuards::test_duplicate_pet_name_is_ignored PASSED [ 85%]
+tests/test_pawpal.py::TestFiltering::test_filter_completed_false_excludes_done_tasks PASSED [ 89%]
+tests/test_pawpal.py::TestFiltering::test_filter_completed_true_with_no_done_tasks_returns_empty PASSED [ 92%]
+tests/test_pawpal.py::TestFiltering::test_filter_by_pet_name_returns_only_that_pets_tasks PASSED [ 96%]
+tests/test_pawpal.py::TestFiltering::test_filter_with_no_kwargs_returns_original_list PASSED [100%]
+
+============================== 28 passed in 0.02s ==============================
 ```
 
 ## 📐 Smarter Scheduling
