@@ -159,12 +159,88 @@ When a task is marked done, `PetCareTask.mark_complete()` decides what happens n
 
 ## 📸 Demo Walkthrough
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+### Main UI features
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+The Streamlit app (`app.py`) is split into four steps the owner works through from top to bottom:
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+- **Step 1 — Owner**: enter a name, set how many minutes are available today, and optionally pick preferred task categories (e.g. "nutrition", "hygiene") that get bumped ahead in the schedule within the same priority tier.
+- **Step 2 — Add a Pet**: add as many pets as needed, each with a name, species, and age. Duplicate names are rejected automatically.
+- **Step 3 — Add Tasks**: pick which pet gets the task, then fill in a title, duration, priority (low / medium / high), and category. Each pet's current task list renders as a sortable inline table — shortest tasks first — with a live total-time count and a ✕ button to remove any task on the spot.
+- **Step 4 — Generate Schedule**: one click runs the scheduler and displays the full day plan as a formatted table (Time, Pet, Task, Duration, Priority), an expandable "Why this schedule?" explanation, any conflict warnings with per-conflict actionable tips, and a list of tasks that didn't fit with the reason why.
+
+### Example workflow
+
+1. Enter owner name **Jordan**, set **90 minutes** available, select **nutrition** as a preferred category. Click **Save Owner**.
+2. Add pet **Buddy** (dog, age 3). Add pet **Mochi** (cat, age 5).
+3. For Buddy, add: *Feeding* (10 min, high, nutrition), *Morning Walk* (30 min, high, exercise), *Bath Time* (45 min, medium, grooming).
+4. For Mochi, add: *Feeding* (5 min, high, nutrition), *Litter Box Clean* (5 min, medium, hygiene).
+5. Click **Generate Schedule**. The scheduler front-loads high-priority tasks, groups each pet's tasks together, inserts 5-minute breaks after every 60 minutes of work, and reports anything it couldn't fit.
+
+### Key Scheduler behaviors demonstrated
+
+- **Priority-first sort** — high-priority tasks always land before medium or low ones regardless of duration.
+- **Preferred-category boost** — tasks in the owner's chosen categories move ahead of same-priority tasks in other categories.
+- **Shortest-first display** — the Step 3 task list is sorted by `sort_by_time()` so owners see quickest tasks at the top.
+- **Conflict detection** — `find_conflicts()` checks every pair of scheduled items for time-window overlap; detected conflicts surface as warning cards with the exact time window and a tip to shift one task.
+- **Recurring due dates** — completing a daily task schedules the next occurrence for tomorrow; a weekly task lands 7 days out.
+- **Skipped-task reporting** — tasks that don't fit include their priority icon (🔴 high, 🟡 medium, ⚪ low) and the reason.
+
+### Sample CLI output (`python3 main.py`)
+
+```
+========================================
+  DAILY: complete Buddy's Morning Walk
+========================================
+Before: [('Bath Time', None), ('Morning Walk', None), ('Feeding', None)]
+After:  [('Bath Time', None), ('Feeding', None), ('Morning Walk', datetime.date(2026, 7, 6))]
+  due_date = today + timedelta(days=1) = 2026-07-06
+
+========================================
+  SORT BY DURATION — shortest first
+========================================
+    5 min  [medium]  Litter Box Clean
+    5 min  [high  ]  Feeding
+   10 min  [high  ]  Feeding
+   20 min  [medium]  Grooming
+   30 min  [high  ]  Morning Walk
+   45 min  [medium]  Bath Time
+
+========================================
+  FILTER — Buddy's tasks only
+========================================
+  [Buddy]  Bath Time  (todo)
+  [Buddy]  Feeding  (todo)
+  [Buddy]  Morning Walk  (todo)
+  [Buddy]  Grooming  (todo)
+
+========================================
+       TODAY'S SCHEDULE
+========================================
+Daily Plan — 2026-07-05
+------------------------------
+08:00 - 08:10  [Buddy] Feeding
+08:10 - 08:15  [Mochi] Feeding
+08:15 - 08:45  [Buddy] Morning Walk
+08:45 - 08:50  [Mochi] Litter Box Clean
+08:50 - 09:10  [Buddy] Grooming
+
+Skipped:
+  [Buddy] Bath Time (not enough time remaining)
+
+Total time used: 70 min
+Tasks scheduled: 5
+Tasks skipped:   1
+Breaks inserted: 0
+Conflicts:       0
+
+========================================
+  SAME-PET CONFLICT (08:00 overlap)
+========================================
+Warning: 1 scheduling conflict(s) detected:
+  [Buddy] Morning Walk (08:00–08:30) overlaps [Buddy] Feeding (08:00–08:15)
+
+========================================
+  NO CONFLICT (sequential tasks)
+========================================
+warn_conflicts returned: None
+```
